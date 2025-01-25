@@ -38,6 +38,8 @@ async def price(currency: str) -> Dict[str, Union[str, float, str]]:
 
         if last_bid_price is None:
             raise HTTPException(status_code=400, detail=f"Could not find bid price for {currency_symbol}")
+        connection = None
+        cursor = None
         try:
             connection = connect()
             cursor = connection.cursor()
@@ -147,14 +149,22 @@ async def price_history(currency: str) -> Dict[str, float]:
     """
     currency_symbol = f"{currency.upper()}/USDT"
     table_name = currency_symbol.replace("/", "_").lower()
+    connection = None
+    cursor = None
     try:
         connection = connect()
         cursor = connection.cursor()
         if not table_exist(table_name, cursor):
             raise Exception(f"Table {table_name} does not exist.")
-        return get_history_prices(table_name, cursor)
+        history_prices = get_history_prices(table_name, cursor)
     except ccxt.BaseError as e:
         raise HTTPException(status_code=400, detail=f"An error occurred with KuCoin API: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+    return history_prices
 
 
 def get_history_prices(table_name: str, cursor: psycopg2.extensions.cursor) -> Dict[str, float]:
@@ -196,15 +206,22 @@ async def delete_table(currency: str) -> Dict[str, bool]:
     """
     currency_symbol = f"{currency.upper()}/USDT"
     table_name = currency_symbol.replace("/", "_").lower()
+    connection = None
+    cursor = None
     try:
         connection = connect()
         cursor = connection.cursor()
         if not table_exist(table_name, cursor):
             raise Exception(f"Table {table_name} does not exist.")
         delete_table_from_db(table_name, cursor, connection)
-        return {"Table deleted succesfully": True}
     except ccxt.BaseError as e:
         raise HTTPException(status_code=400, detail=f"An error occurred with KuCoin API: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+    return {"Table deleted successfully": True}
 
 
 def delete_table_from_db(table_name: str,

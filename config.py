@@ -1,7 +1,20 @@
+from typing import Dict
 from configparser import ConfigParser
 
 
-def config(filename="database.ini", section="postgresql"):
+def config(filename: str = "database.ini", section: str = "postgresql") -> Dict[str, str]:
+    """Read parameters from database.ini file.
+
+    Args:
+        filename (str, optional): Name of file to read data from. Defaults to "database.ini".
+        section (str, optional): Name of section inside the file to read data from. Defaults to "postgresql".
+
+    Raises:
+        Exception: The section parameter was not detected.
+
+    Returns:
+        Dict[str, str]: Name of parameter and its value.
+    """
     parser = ConfigParser()
     parser.read(filename)
     db = {}
